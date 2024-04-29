@@ -1,0 +1,85 @@
+setxkbmap it
+
+sudo su
+nmcli r wifi on
+nmcli dev wifi
+nmcli dev wifi connect Vodafone-C00940140 password 36x64gfyZkHXEpsE
+exit
+
+source /etc/os-release
+export DISTRO="${VERSION_CODENAME}-stable"
+wget -O - apt.radxa.com/$DISTRO/public.key | sudo apt-key add -
+sudo apt update
+sudo apt upgrade
+
+sudo apt install ntfs-3g
+#??? /dev/sda2 /mnt/ntfs/ ntfs nls-utf8,umask-0222,uid-1000,gid-1000,ro 0 0 ???
+sudo mount -t ntfs-3g /dev/sda2 /mnt
+
+collegare HDD
+sudo mount -t ntfs /dev/sda2 /mnt
+copiare la cartella "Documents" dentro "Eisemann"
+sudo umount /dev/sda2
+scollegare HDD
+
+sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+
+sudo apt install git build-essential
+#curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py
+sudo python Documents/Test/get-pip.py
+sudo apt-get install libssl-dev libffi-dev python-dev
+sudo apt install libglib2.0-dev
+sudo pip install bluepy
+sudo pip install paramiko
+sudo pip install python-periphery
+sudo pip install pyserial
+sudo apt install ppp screen elinks
+
+sudo nano /etc/ppp/peers/rnet 
+
+#code start
+connect "/usr/sbin/chat -v -f /etc/chatscripts/gprs -T mobile.vodafone.it"
+/dev/ttyS2
+115200
+noipdefault
+usepeerdns
+defaultroute
+persist
+noauth
+nocrtscts
+local
+#code end
+
+sudo nano /boot/hw_intfc.conf
+
+ intfc:uart2=on
+ intfc:uart4=on
+ #intfc:dtoverlay=console-on-ttyS2
+ #intfc:dtoverlay=console-on-ttyS4
+ 
+sudo nano /boot/extlinux/extlinux.conf
+ 
+ delete console=ttyS2,1500000n8 e console=ttyFIQ0,1500000n8
+
+sudo rm /etc/default/console
+sudo nano /lib/systemd/system/eisenmann.service 
+
+[Unit]
+Description=Eisenmann Service
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=sudo /usr/bin/python /home/rock/Documents/ble_xEisenmann_v3.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+sudo chmod 644 /lib/systemd/system/eisenmann.service
+sudo systemctl daemon-reload
+sudo systemctl enable eisenmann.service
+
+sudo nmcli r wifi off
+
+sudo reboot

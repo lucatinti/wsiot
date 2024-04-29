@@ -1,0 +1,13 @@
+Il Gateway si connette al server aruba per aggiornare il proprio software:
+	- accede al server Aruba (ftp.wisepower.it)
+	- verifica il codice nella cartella Eisenmann/Gateway/GT-IOT001PYYY-XX (il codice corrisponde al valore XX)
+	- se il valore XX è discorde da quello salvato nel file ble_xEisenmann_v3.py interno al gateway, allora scarica i file ed esegue il reboot per l'installazione
+
+Se si vuole installare una nuova versione all'inteno di un gateway Eisenmann:
+	- Modificare all'interno del file ble_xEisenmann_v3.py la variabile "gateway_file_version" con i valori XX nuovi (deve essere maggiore del precedente!)
+	- Copiare i nuovi file con il medesimo nome all'interno della cartella del server Aruba, con le modifiche apportate
+	- Modificare il nome della cartella con lo stesso valore XX impostato all'interno del file ble_xEisenmann_v3.py
+
+Quando il gateway effettuerà la verifica, i due valiri XX non coincideranno e scaricherà il nuovo software. (avviene quando riceve un qualche dato da qualche sensore, altrimenti non effettua l'aggiornamento)
+
+	

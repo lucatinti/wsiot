@@ -1,0 +1,17 @@
+Il gateway aggiorna i sensori tramite BLE:
+	- il gateway accede al server Eisenmann: attualmente all'indirizzo 188.219.249.134, porta 2022, username "wisepower", password "wisepower!"
+	- verifica se all'interno della cartella /home/wisepower/files_wisepower/gbl/ sia presente la nuova versione del firmware "eisenmann_(versione).gbl"
+	- se il codice della versione è diverso da quello attualmente presente sul gateway, lo scarica e lo sostituisce a quello vecchio.
+	- quando un sensore si collegherà al gateway, quest'ultimo verificerà la versione presente sul sensore e lo aggiornerà se deve.
+
+Per caricare un nuovo firmware sul gateway Eisenmann:
+	- progetto WS-IOT001P1YY-XX
+	- apportare le modifiche desiderate
+	- aggiornare la variabile char firmware_version[13] = "eisenmann_vX\0"; con la verione desiderata (maggiore della precedente; attualmente versione 3) nel file app.c
+	- compilare per verificare la presenza di errori, e preferibilmente testare su un dispositivo in ufficio!
+	- creare il file .gbl:
+		utilizzar lo script "create_bl_files.bat"
+		nella cartella output_gbl prendere il file "application.gbl" e rinominarlo "eisenmann_vX.gbl", dove X è il numero della versione desiderata
+	cancellare il vecchio file presente nel server Eisenmann nella cartella /home/wisepower/files_wisepower/gbl/ (deve essere presente un unico file alla fine del processo)
+	salvare il nuovo file eisenmann_vX.gbl nel server Eisenmann, ad esempio tramite comando scp su windows:
+		scp -P 2022 "path_locale/eisenmann_vX.gbl" wisepower@188.219.249.134:/home/wisepower/files_wisepower/gbl/
