@@ -93,8 +93,8 @@ class agentNotify():
         
 
 class agentScanner():
-    def __init__(self):
-        self.scanner = btle.Scanner(1)
+    def __init__(self, bt_antenna):
+        self.scanner = btle.Scanner(bt_antenna) #1 for external, 0 for internal
         self.scanner.withDelegate(myDelegateScanner())
         
     def bleScan(self, time):

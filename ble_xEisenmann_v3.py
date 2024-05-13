@@ -2,7 +2,7 @@
 
 from threading import Thread
 from datetime import datetime
-from bluepy3 import btle
+import bluepy3.btle as btle
 
 from periphery import GPIO
 import os
@@ -146,7 +146,7 @@ def connection(mac_address, config, firmware_version, interface):
         delegate = ble_agent.myDelegateNotify(mac_address)
         notifyAgent.bleDelegate(delegate)
         notifyAgent.bleSetMTU(250)
-#         response = notifyAgent.bleWriteCh(handleCh_password, valueCh_password, True)
+        response = notifyAgent.bleWriteCh(handleCh_password, valueCh_password, True)
         response = notifyAgent.bleWriteCh(handleCh_notification, b"\x01\x00", True)
         
         for i in range(5):
@@ -373,7 +373,7 @@ def scanning():
     global device_ota_to_connect
     global scan_active
     scan_active = True
-    agent = ble_agent.agentScanner()
+    agent = ble_agent.agentScanner(1)
     
     while True:
         #print"agent scan"
@@ -438,7 +438,7 @@ def main():
     new_config = {}
     
     local_path_config = "/home/radxa/Documents/config.txt"
-    remote_path_config = "/home/wisepower/files_wisepower/config.txt"
+    remote_path_config = "www.wisepower.it/ws_iot/config.txt"
     local_path = "/home/radxa/Documents/"
     gbl_path = "/home/radxa/Documents/gbl/"
     data_path = "/home/radxa/Documents/Data/"
@@ -469,12 +469,39 @@ def main():
     
     while not connection_established:
         try:
-            client = utility.openSSHConnection(SERVER_NAME, SERVER_PORT, SERVER_USER_NAME, SERVER_PASSWORD)
-            sftp = utility.openFTPSession(client)
-            map_config = utility.getConfigFile(sftp, remote_path_config, local_path_config, map_config, new_config)
-            utility.closeFTPSession(sftp)
-            utility.closeSSHConnection(client)
+            from ftplib import FTP
+            ftp_session = FTP("ftp.wisepower.it", "1451303@aruba.it", "QWEasz123*", timeout=60)
+            ftp_session.cwd("www.wisepower.it/ws_iot")
+
+            stored_files = ftp_session.nlst()[2:]
+            for f in stored_files:
+                if f == "config.txt":
+                    with open(f, "w") as fp:
+                        ftp_session.retrlines('RETR %s' % f, fp.writelines)
+            # client = utility.openSSHConnection(SERVER_NAME, SERVER_PORT, SERVER_USER_NAME, SERVER_PASSWORD)
+            # sftp = utility.openFTPSession(client)
+
+            with open(local_path_config, 'r') as f:
+                config_list = []
+                stop = False
+                while not stop:
+                    line = f.readline()[:-1]
+                    if line == '': stop = True
+                    else: config_list.append(line.split(" "))
+                    
+                    for x in config_list:
+                        map_config[x[0]] = x[1:]
+
+            ftp_session.quit()
+
+            # map_config = utility.getConfigFile(sftp, remote_path_config, local_path_config, map_config, new_config)
+            # utility.closeFTPSession(sftp)
+            # utility.closeSSHConnection(client)
+
+
             connection_established = True
+
+
         except Exception as e:
             print(e)
             # count_nError = count_nError + 1
@@ -506,8 +533,8 @@ def main():
                 print(e)
                 
             if not scan_active:
-                os.system('hciconfig hci0 down && hciconfig hci0 up')
-                # os.system('hciconfig hci1 down && hciconfig hci1 up')
+                # os.system('hciconfig hci0 down && hciconfig hci0 up')
+                os.system('hciconfig hci1 down && hciconfig hci1 up')
                 time.sleep(1.0)
                 singleAgentScanning = Thread(target=scanning)
                 singleAgentScanning.daemon = True
@@ -516,22 +543,23 @@ def main():
             try:
                 if devices_saved == [] and device_ota_saved == []:
                     file_to_send = glob.glob(data_path + "*.bin")
-                    if file_to_send != []:
-                        client = utility.openSSHConnection('188.219.249.134', 2022, 'wisepower', 'wisepower!')
-                        sftp = utility.openFTPSession(client)
-                        for f in file_to_send:
-                            utility.saveDataIntoServer(sftp, f, remote_path+(f.split("/")[-1]))
-                            os.remove(f)
-                        # utility.saveDataIntoServer(sftp, alarm_path, remote_path+"alarm.txt")
-                        # utility.updateAlarmFileIntoServer(sftp) # riga giusta
-                        map_config = utility.getConfigFile(sftp, remote_path_config, local_path_config, map_config, new_config)
-                        utility.getFirmwareFile(sftp, remote_path_gbl, gbl_path)
-                        utility.closeFTPSession(sftp)
-                        utility.closeSSHConnection(client)
+                    print(file_to_send)
+                    # if file_to_send != []:
+                    #     client = utility.openSSHConnection('188.219.249.134', 2022, 'wisepower', 'wisepower!')
+                    #     sftp = utility.openFTPSession(client)
+                    #     for f in file_to_send:
+                    #         utility.saveDataIntoServer(sftp, f, remote_path+(f.split("/")[-1]))
+                    #         os.remove(f)
+                    #     # utility.saveDataIntoServer(sftp, alarm_path, remote_path+"alarm.txt")
+                    #     # utility.updateAlarmFileIntoServer(sftp) # riga giusta
+                    #     map_config = utility.getConfigFile(sftp, remote_path_config, local_path_config, map_config, new_config)
+                    #     utility.getFirmwareFile(sftp, remote_path_gbl, gbl_path)
+                    #     utility.closeFTPSession(sftp)
+                    #     utility.closeSSHConnection(client)
 
-                        reboot_2_update = utility.check_gateway_firmware_version(gateway_file_version, local_path)
-                        if reboot_2_update:
-                            os.system("reboot")
+                    #     reboot_2_update = utility.check_gateway_firmware_version(gateway_file_version, local_path)
+                    #     if reboot_2_update:
+                    #         os.system("reboot")
 
             except Exception as e:
                 print(e)
